@@ -69,6 +69,7 @@ public class FaultToleranceDocTest extends JUnitSuite {
           }).build();
     });
 
+    // #bubbling-example
     {
     // #bubbling-example
     final ActorSystem<Message> system =
@@ -80,8 +81,7 @@ public class FaultToleranceDocTest extends JUnitSuite {
             "akka.loggers = [ akka.testkit.TestEventListener ]\n" +
             "akka.loglevel=warning"));
 
-    // #bubbling-example
-    // actual exception and thent the deathpacts
+    // actual exception and then the deathpacts
     new EventFilter(Exception.class, ActorSystemAdapter.toUntyped(system)).occurrences(4).intercept(() -> {
     // #bubbling-example
     system.tell(new Fail("boom"));

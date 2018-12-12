@@ -4,21 +4,27 @@
 
 package akka.actor.typed
 
-import akka.{ actor ⇒ a }
-import java.util.concurrent.{ CompletionStage, ThreadFactory }
+import java.util.concurrent.CompletionStage
+import java.util.concurrent.ThreadFactory
 
-import akka.actor.setup.ActorSystemSetup
-import com.typesafe.config.{ Config, ConfigFactory }
-import scala.concurrent.{ ExecutionContextExecutor, Future }
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.Future
+import scala.concurrent.duration.Duration
 
-import akka.actor.typed.internal.adapter.{ ActorSystemAdapter, PropsAdapter }
-import akka.util.Timeout
-import akka.annotation.DoNotInherit
-import akka.annotation.ApiMayChange
 import akka.actor.BootstrapSetup
+import akka.actor.setup.ActorSystemSetup
 import akka.actor.typed.internal.InternalRecipientRef
 import akka.actor.typed.internal.adapter.GuardianActorAdapter
+import akka.actor.typed.internal.adapter.ActorSystemAdapter
+import akka.actor.typed.internal.adapter.PropsAdapter
 import akka.actor.typed.receptionist.Receptionist
+import akka.annotation.ApiMayChange
+import akka.annotation.DoNotInherit
+import akka.util.Helpers.Requiring
+import akka.util.Timeout
+import akka.{ actor ⇒ a }
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 
 /**
  * An ActorSystem is home to a hierarchy of Actors. It is created using
@@ -245,19 +251,23 @@ object ActorSystem {
  * This class is immutable.
  */
 final class Settings(val config: Config, val untyped: a.ActorSystem.Settings, val name: String) {
-  def this(_cl: ClassLoader, _config: Config, name: String) = this({
-    val config = _config.withFallback(ConfigFactory.defaultReference(_cl))
-    config.checkValid(ConfigFactory.defaultReference(_cl), "akka")
+  def this(classLoader: ClassLoader, cfg: Config, name: String) = this({
+    val config = cfg.withFallback(ConfigFactory.defaultReference(classLoader))
+    config.checkValid(ConfigFactory.defaultReference(classLoader), "akka")
     config
-  }, new a.ActorSystem.Settings(_cl, _config, name), name)
+  }, new a.ActorSystem.Settings(classLoader, cfg, name), name)
 
   def this(untyped: a.ActorSystem.Settings) = this(untyped.config, untyped, untyped.name)
 
-  private var foundSettings = List.empty[String]
-
-  foundSettings = foundSettings.reverse
-
   def setup: ActorSystemSetup = untyped.setup
 
-  override def toString: String = s"Settings($name,\n  ${foundSettings.mkString("\n  ")})"
+  /**
+   * Returns the String representation of the Config that this Settings is backed by
+   */
+  override def toString: String = config.root.render
+
+  private val typedConfig = config.getConfig("akka.actor.typed")
+
+  val RestartStashCapacity: Int = typedConfig.getInt("restart-stash-capacity")
+    .requiring(_ >= 0, "restart-stash-capacity must be >= 0")
 }

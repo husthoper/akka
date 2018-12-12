@@ -7,13 +7,14 @@ package akka.persistence.typed.scaladsl
 import java.util.UUID
 
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorRef, SupervisorStrategy }
+import akka.actor.typed.{ActorRef, SupervisorStrategy}
 import akka.persistence.typed.scaladsl.EventSourcedBehavior.CommandHandler
 import akka.actor.testkit.typed.TE
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 
+import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.typed.PersistenceId
 import org.scalatest.WordSpecLike
@@ -85,7 +86,7 @@ object PerformanceSpec {
         Effect.persist(evt).thenRun(_ ⇒ {
           parameters.persistCalls += 1
           if (parameters.every(1000)) print(".")
-          if (parameters.shouldFail) throw TE("boom")
+          if (parameters.shouldFail) throw TestException("boom")
         })
       case _ ⇒ Effect.none
     }
